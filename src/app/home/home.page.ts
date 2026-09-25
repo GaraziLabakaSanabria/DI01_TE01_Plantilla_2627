@@ -3,6 +3,11 @@ import restaurantesJSON from '../../assets/datos/restaurantes.json';
 import { IonicModule } from '@ionic/angular';
 import { ToastController } from '@ionic/angular';
 import { Restaurante } from '../interface/restaurante';
+import { 
+  IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, 
+  IonContent, IonItem, IonLabel, IonGrid, IonRow, IonCol, 
+  IonInput, IonSelect, IonSelectOption 
+} from '@ionic/angular/standalone';
 
 @Component({
   selector: 'app-home',
