@@ -105,7 +105,7 @@
     <ion-item lines="none">
       <ion-label>
         Mostrando {{ restaurantesFiltrados().length }} de {{ restaurantesCargados().length }} restaurantes
-        @if(restaurantesFiltrados().length === 0 && hayFiltrosActivos()) {
+        @if(restaurantesFiltrados().length === 0) {
           <span>Prueba a cambiar los filtros</span>
         }
       </ion-label>
