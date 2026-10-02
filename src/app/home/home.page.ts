@@ -1,13 +1,13 @@
+import { Restaurante } from './../interface/restaurante';
 import { Component, signal, computed, inject } from '@angular/core';
 import restaurantesJSON from '../../assets/datos/restaurantes.json';
-import { IonicModule } from '@ionic/angular';
-import { ToastController } from '@ionic/angular';
-import { Restaurante } from '../interface/restaurante';
+import { IonicModule, ToastController } from '@ionic/angular';
 import { 
   IonHeader, IonToolbar, IonTitle, IonButtons, IonButton, 
   IonContent, IonItem, IonLabel, IonGrid, IonRow, IonCol, 
   IonInput, IonSelect, IonSelectOption 
 } from '@ionic/angular/standalone';
+import { filter } from 'rxjs';
 
 @Component({
   selector: 'app-home',
@@ -17,10 +17,15 @@ import {
   styleUrls: ['home.page.scss']
 })
 export class HomePage {
+[x: string]: any;
+
+private tc = inject(ToastController);
+
 
   // ############################### REGION DATOS ###############################
 
   // TODO - Inyectamos el controlador de toasts para mostrar mensajes al usuario
+  
 
   // Lista completa de restaurantes leída del JSON en tiempo de compilación
   restaurantes: Restaurante[] = restaurantesJSON as Restaurante[];
@@ -30,20 +35,32 @@ export class HomePage {
 
   // TODO - true cuando hay al menos un restaurante cargado.
   // Habrá que usar un computed para controlar si restaurantesCargados tiene elementos o no.
-  hayDatos = false;
+  hayDatos = computed(() => {
+    if(this.restaurantesCargados().length > 0) {
+     return true;
+    } else {
+     return false;
+    }
+  }
+);
+   
 
   // TODO - Carga la lista completa en el signal y muestra un toast de confirmación
   cargarDatos() {
     // Cargamos los datos en el signal mediante set()
-    
-    // Mostramos un toast de confirmación con el número de restaurantes cargados
-    
+    this.restaurantesCargados.set(this.restaurantes);
+    this.mostrarToast("Datos cargados correctamente", "success");
   }
-
   // TODO -Muestra un toast con el mensaje y color indicados
   private async mostrarToast(mensaje: string, color: 'success' | 'danger' | 'warning') {
-    
-  }
+    // Mostramos un toast de confirmación con el número de restaurantes cargados
+      const toast = await this.tc.create({
+        message: 'Datos cargados',
+        color: 'success', 
+        duration: 2000
+      });
+      await toast.present();
+    } 
 
 
   // ############################### REGION FILTROS (estado general) ###############################
@@ -59,19 +76,24 @@ export class HomePage {
   // PISTA: Mediante map() podemos crear un array de string[] con cada territorio de cada restaurante. Ejemplo: ["Bizkaia", "Gipuzkoa", "Bizkaia", "Araba", "Gipuzkoa"]
   //        Luego mediante Set() podemos eliminar duplicados y finalmente mediante Array.from() podemos volver a convertirlo en un array para devolverlo ordenado alfabéticamente mediante sort().
   territoriosFiltrados = computed(() => {
-
+    const datos = this.restaurantesCargados();
+    const listaTerritorios = datos.map(r => r.territory);
+    return Array.from(new Set(listaTerritorios)).sort();
   });
 
   // TODO - Actualiza el territorio seleccionado y elimina las localidades que ya no pertenecen a él
   onTerritorioChange(value: string) {
+    this.territorioSeleccionado.set(value);
     // Actualizamos el territorio seleccionado
 
     // Filtra las localidades ya seleccionadas, quedándose solo con las que siguen siendo válidas para el nuevo territorio.
     // PISTA: Podemos usar filter() para quedarnos solo con las localidades que están en la lista de localidades filtradas por territorio y includes() para comprobar si una localidad está en esa lista.
     // Por ejemplo, si el usuario tenía seleccionadas las localidades ["Bilbao", "Donostia"] y cambia el territorio a "Araba", la localidad "Bilbao" ya no es válida y debe eliminarse de la lista de localidades seleccionadas.
-
+    let locValidas = this.localidadesFiltradasPorTerritorio();
     // Actualizamos las localidades seleccionadas con las nuevas localidades válidas
-
+    //let locFiltradas = this.localidadesSeleccionadas().filter(
+      
+    
   }
 
   // ############################### REGION LOCALIDADES ###############################
@@ -84,13 +106,17 @@ export class HomePage {
   localidadesFiltradasPorTerritorio = computed(() => {
     // Obtenemos la lista de restaurantes cargados, siendo lista un array de objetos Restaurante.
     let lista: Restaurante[] = [];
+
+     const datos = this.restaurantesCargados();
+     lista = datos;
+
     // Para el territorio la pasaremos a minúsculas y eliminaremos espacios al principio y al final para evitar problemas de coincidencia, mediante toLowerCase() y trim().
-    const territorio = "";
+    const territorio =  lista.filter(rest => rest.territory.toLowerCase().trim() === this.territorioSeleccionado());
     // Si hay un territorio seleccionado, filtramos la lista de restaurantes por él
-    if (territorio) {
+
       // Filtramos la lista de restaurantes para quedarnos solo con los que tienen el territorio seleccionado, usando filter() y comparando el territorio del restaurante con el territorio seleccionado.
 
-    }
+   
 
     // RESUELTO: Obtenemos la lista de localidades únicas de los restaurantes restantes, eliminando duplicados y ordenando alfabéticamente.
     /* Explicación: locality puede ser undefined, null o un string. Mediante ? de r.locality? le decimos que si es undefined o null no haga nada y devuelva undefined, 
@@ -107,44 +133,70 @@ export class HomePage {
 
     //Finalmente mediante Set() eliminamos duplicados y Array.from() lo convertimos de nuevo en un array, que ordenamos alfabéticamente mediante sort(). 
     
+ return localities;
   });
 
   // TODO - Actualiza las localidades seleccionadas con los valores del evento
   onLocalidadesChange(value: string[]) {
-    
+    this.localidadesSeleccionadas.set(value);
   }
 
   // ############################### REGION RESULTADOS ###############################
 
   // TODO - Lista filtrada de restaurantes según todos los filtros activos
-  restaurantesFiltrados = computed(() => {
-
     // Obtenemos la lista de restaurantes cargados, siendo lista un array de objetos Restaurante.
-
+  
     // Filtramos la lista de restaurantes según el texto de búsqueda, el territorio seleccionado y las localidades seleccionadas.
     // PISTA: Habrá que hacer uso de icludes() para comprobar si el texto de búsqueda está en el nombre del restaurante, si el territorio del restaurante coincide con el territorio seleccionado 
     //        y si la localidad del restaurante está en la lista de localidades seleccionadas.
     //        Habrá que hacer uso de filter() para filtrar la lista de restaurantes según cada uno de los filtros activos.
 
-    //textoBusqueda
+      // TODO - Lista filtrada de restaurantes según todos los filtros activos
+  restaurantesFiltrados = computed(() => {
     
-    //territorioSeleccionado
-    
-    //localidadesSeleccionadas
-    
-    //Devuelve la lista filtrada de restaurantes
- 
+    const datos = this.restaurantesCargados();
+    const busqueda = this.textoBusqueda().toLowerCase().trim();
+    const territorio = this.territorioSeleccionado();
+    const localidades = this.localidadesSeleccionadas();
+
+    return datos.filter((restaurante) => {
+      // filtro 1
+      const cumpleNombre = restaurante.documentName.toLowerCase().includes(busqueda);
+
+      // filtro 2: Territorio (si no hay ninguno seleccionado, pasan todos; si lo hay, debe coincidir exactamente)
+      const cumpleTerritorio = restaurante.territory === territorio;
+
+      // filtro 3
+      const cumpleLocalidad = localidades.includes(restaurante.municipality);
+
+      return cumpleNombre && cumpleTerritorio && cumpleLocalidad;
+    });
   });
+
 
   // ############################### REGION AUXILIARES ###############################
 
   // Devuelve el número de estrellas Michelin (0 si no tiene o el valor no es numérico)
-  estrellasMichelin() {
-    
+  estrellasMichelin(restaurante : Restaurante): number {
+    if(restaurante && restaurante.michelinStar) {
+     const estrellas = Number(restaurante.michelinStar);
+      return isNaN(estrellas) ? 0 : estrellas;
+    }
+    return 0;
   }
+    
 
   // Devuelve el número de soles Repsol (0 si no tiene o el valor no es numérico)
-  repsolSoles() {
-    
+ 
+ repsolSoles(restaurante : Restaurante): number {
+    if(restaurante && restaurante.repsolSun) {
+     const soles = Number(restaurante.michelinStar);
+      return isNaN(soles) ? 0 : soles;
+    }
+    return 0;
   }
+
 }
+
+
+    
